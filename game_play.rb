@@ -29,11 +29,10 @@ class GamePlay
         until stepped_on_bomb || won? || paused
             begin
                 system "clear"
-                puts "Score: #{@score}"
+                puts "Score: #{@score}".colorize(:red)
                 puts "Press 'Tab' to save the game state"
                 render
                 puts "Use arrow keys to select position, then hit Enter/Return"
-                # pos = gets.chomp
                 cursor_input = cursor_input?
                 if cursor_input == 'TAB'
                     GamePlay.store_game(self.board)
@@ -82,8 +81,7 @@ class GamePlay
             self.board[self.pos].value = "skull"
             self.pos = nil
             render
-            self.score -= 1
-            puts "Game Over!!!"
+            puts "Game Over!!!".colorize(:red)
             File.delete("./prev_board.yml") if File.exist?("./prev_board.yml")
             true
         else
@@ -95,7 +93,7 @@ class GamePlay
         if self.board.grid.flatten.all? { |card| card.value != "bomb" && card.is_flipped == true }
             self.pos = nil
             render
-            puts "You Won!!!"
+            puts "You Won!!!".colorize(:blue)
             File.delete("./prev_board.yml") if File.exist?("./prev_board.yml")
             true
         else    
