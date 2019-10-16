@@ -36,7 +36,6 @@ class Board
     end
 
     def game_over_flip(card)
-        # Tile::VALUES[card].#background_color(:red)
         card.is_flipped = true
         self.grid.flatten.each do |other_card|
             other_card.is_flipped = true if other_card.value == "bomb"
@@ -103,6 +102,6 @@ class Board
     end
 
     def inspect
-        [@grid].inspec
+        [@grid].inspect
     end
 end
