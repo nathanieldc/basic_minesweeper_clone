@@ -1,14 +1,16 @@
 require_relative "board.rb"
 require_relative "tile.rb"
+require_relative "cursor.rb"
 require "set"
 require "yaml"
+require "io/console"
 require "colorize"
 require "byebug"
 
 
 class GamePlay
 
-    attr_accessor :board, :score
+    attr_accessor :board, :score, :pos
 
     def self.store_game(board)
         File.open("prev_board.yml", "w") { |file| file.write(board.to_yaml) }
@@ -17,28 +19,32 @@ class GamePlay
     def initialize(board)
         @board = board
         @score = 0
+        @pos = nil
     end
 
     def play
         stepped_on_bomb = false 
         paused = false
+        self.pos = [0,0]
         until stepped_on_bomb || won? || paused
             begin
-                puts "Score: #{@score} HighestScore: #{@highest_score}"
-                puts "Enter 'S' to save game state"
+                system "clear"
+                puts "Score: #{@score}"
+                puts "Press 'Tab' to save the game state"
                 render
-                puts "Enter a pos from '0..8' such as '0,3'"
-                pos = gets.chomp
-                if pos == 'S' || pos == 's'
+                puts "Use arrow keys to select position, then hit Enter/Return"
+                # pos = gets.chomp
+                cursor_input = cursor_input?
+                if cursor_input == 'TAB'
                     GamePlay.store_game(self.board)
                     system "clear"
                     puts "Your game state is Saved.. program has exited"
                     paused = true
                     return
                 end
-                stepped_on_bomb = make_move(pos.split(',').map(&:to_i))
+                stepped_on_bomb = make_move(self.pos) if cursor_input == "RETURN"
                 lost?(stepped_on_bomb) || won?
-                self.score += 1
+                self.score += 1 if cursor_input == "RETURN"
             rescue
                 "Invalid entry, please try again."
                 retry
@@ -46,11 +52,35 @@ class GamePlay
         end
     end
 
+    def cursor_input?
+        case show_single_key
+        when "UP ARROW"
+            a, b = self.pos
+            self.pos = a - 1, b
+        when "DOWN ARROW"
+            a, b = self.pos
+            self.pos = a + 1, b
+        when "LEFT ARROW"
+            a, b = self.pos
+            self.pos = a, b - 1
+        when "RIGHT ARROW"
+            a, b = self.pos
+            self.pos = a, b + 1
+        when "RETURN"
+            return "RETURN"
+        when "TAB"
+            return "TAB"
+        end
+        false
+    end
+
     def lost?(stepped_on_bomb)
         if stepped_on_bomb
             self.board.grid.flatten.each  do |card| 
                 card.value = "dead" if card.value == 0 && card.is_flipped == true 
             end
+            self.board[self.pos].value = "skull"
+            self.pos = nil
             render
             self.score -= 1
             puts "Game Over!!!"
@@ -63,6 +93,7 @@ class GamePlay
 
     def won?
         if self.board.grid.flatten.all? { |card| card.value != "bomb" && card.is_flipped == true }
+            self.pos = nil
             render
             puts "You Won!!!"
             File.delete("./prev_board.yml") if File.exist?("./prev_board.yml")
@@ -78,16 +109,18 @@ class GamePlay
 
     def render
         temp_grid = self.board.grid.map do |row|
-            row.map do |card| 
-                if card.is_flipped
+            row.map do |card|
+                if card.pos == self.pos
+                #    Tile::VALUES[card.value].colorize( :background => :red)
+                   "😬"
+                elsif card.is_flipped
                    Tile::VALUES[card.value]  
                 else
                    Tile::VALUES["hidden"]
                 end
             end
         end
-        puts "  #{(0..8).to_a.join(" ")}"
-        temp_grid.each_with_index { |row, idx| puts "#{idx} #{row.join(' ')}" }
+        temp_grid.each { |row| puts "#{row.join(' ')}" }
     end
 
     def inspect

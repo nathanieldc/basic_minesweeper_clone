@@ -14,6 +14,7 @@ class Tile
     ]
 
     VALUES = {
+        "skull" => '💀',
         "flag" => '⚠️',
         "bomb" => '💣',
         "dead" => '😵',
